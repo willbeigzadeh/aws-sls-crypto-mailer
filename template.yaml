@@ -1,0 +1,63 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  aws-sls-crypto-mailer
+
+Transform:
+  - AWS::Serverless-2016-10-31
+
+Parameters:
+  StageName:
+    Type: String
+    Default: dev
+
+Globals:
+  Function:
+    Runtime: nodejs22.x
+    Architectures:
+      - x86_64
+    MemorySize: 128
+    Timeout: 100
+    Environment:
+      Variables:
+        STAGE_NAME: !Ref StageName
+
+Resources:
+  Api:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref StageName
+
+  CryptoCurrentPriceEmailFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/handlers/getCryptoCerrentPriceEmail/
+      Handler: app.handler
+      Events:
+        MailCurrentPriceAPI:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Path: /mail-current-price
+            Method: post
+
+  SearchHistoryFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/handlers/getSearchHistory/
+      Handler: app.handler
+      Events:
+        HistoryAPI:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Path: /history
+            Method: get
+
+Outputs:
+  MailCurrentPriceEndpoint:
+    Description: "POST /mail-current-price endpoint"
+    Value: !Sub "https://${Api}.execute-api.${AWS::Region}.amazonaws.com/${StageName}/mail-current-price"
+
+  HistoryEndpoint:
+    Description: "GET /history endpoint"
+    Value: !Sub "https://${Api}.execute-api.${AWS::Region}.amazonaws.com/${StageName}/history"
