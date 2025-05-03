@@ -1,0 +1,1 @@
+# aws-sls-crypto-mailer
