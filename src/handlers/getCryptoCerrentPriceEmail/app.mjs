@@ -1,6 +1,9 @@
 import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
+import { DynamoDBClient, PutItemCommand } from "@aws-sdk/client-dynamodb";
+import { marshall } from "@aws-sdk/util-dynamodb";
 
 const sesClient = new SESClient();
+const dynamoDBClient = new DynamoDBClient({});
 
 const symbolRegex = /^[A-Za-z0-9]{1,10}$/;
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -58,6 +61,24 @@ const sendPriceEmail = async (from, to, symbol, price) => {
   const result = await sesClient.send(command);
 
   return result;
+};
+
+const saveSearchHistory = async (tableName, symbol, price) => {
+  symbol = String(symbol).toUpperCase();
+
+  const timestamp = new Date().toISOString();
+  const item = marshall({
+    Symbol: symbol.toUpperCase(),
+    Timestamp: timestamp,
+    Price: price,
+  });
+
+  const command = new PutItemCommand({
+    TableName: tableName,
+    Item: item,
+  });
+
+  await dynamoDBClient.send(command);
 };
 
 export const handler = async (event, context) => {
@@ -131,7 +152,18 @@ export const handler = async (event, context) => {
     return response;
   }
 
-  // TODO: Log the search in DynamoDB
+  const tableName = process.env.SEARCH_HISTORY_TABLE || "";
+  if (!tableName) {
+    console.warn("Table name is not set. Skipping the logging.");
+  } else {
+    try {
+      await saveSearchHistory(tableName, symbol, stubPrice);
+      console.log("Successfully logged to DynamoDB.");
+    } catch (err) {
+      console.error("Internal error writing to DynamoDB:", err);
+    }
+  }
+
   response.body = JSON.stringify({ message: "Success, check your email!" });
   return response;
 };
