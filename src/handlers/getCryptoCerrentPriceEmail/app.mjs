@@ -81,6 +81,30 @@ const saveSearchHistory = async (tableName, symbol, price) => {
   await dynamoDBClient.send(command);
 };
 
+const getCurrentCryptoPriceAud = async (apiUrl, apiKey, symbol) => {
+  const url = new URL(apiUrl);
+  url.searchParams.set("vs_currency", "aud");
+  url.searchParams.set("symbols", symbol);
+  url.searchParams.set("x_cg_demo_api_key", apiKey);
+
+  const res = await fetch(url.toString());
+  if (!res.ok) {
+    throw new Error(`CoinGecko API error: ${res.status} ${res.statusText}`);
+  }
+
+  const data = await res.json();
+  if (!Array.isArray(data) || data.length === 0) {
+    throw new Error(`No pricing data returned for symbol “${symbol}”.`);
+  }
+
+  const entry = data[0];
+  if (typeof entry.current_price !== "number") {
+    throw new Error(`Unexpected response shape for symbol “${symbol}”.`);
+  }
+
+  return entry.current_price;
+};
+
 export const handler = async (event, context) => {
   const response = {
     statusCode: 200,
@@ -121,8 +145,30 @@ export const handler = async (event, context) => {
   }
   console.log("input:", { symbol, email });
 
-  // TODO: Get current price from CoinGecko
-  const stubPrice = 3.96;
+  const apiKey = process.env.COIN_GECKO_API_KEY || "";
+  const apiUrl = process.env.COIN_GECKO_URL || "";
+  if (!(apiKey && apiUrl)) {
+    response.statusCode = 500;
+    const message = JSON.stringify({
+      message: "Internal server error",
+    });
+    console.error("Missing env vars: COIN_GECKO_API_KEY and/or COIN_GECKO_URL");
+    response.body = message;
+    return response;
+  }
+
+  let price = 0.0;
+  try {
+    price = await getCurrentCryptoPriceAud(apiUrl, apiKey, symbol);
+  } catch (err) {
+    response.statusCode = 500;
+    const message = JSON.stringify({
+      message: "Internal error fetching price.",
+    });
+    console.error(message, err);
+    response.body = message;
+    return response;
+  }
 
   const senderEmail = process.env.SENDER_EMAIL || "";
   if (typeof senderEmail !== "string" || !emailRegex.test(senderEmail)) {
@@ -135,12 +181,7 @@ export const handler = async (event, context) => {
     return response;
   }
   try {
-    const emailResult = await sendPriceEmail(
-      senderEmail,
-      email,
-      symbol,
-      stubPrice
-    );
+    const emailResult = await sendPriceEmail(senderEmail, email, symbol, price);
     console.log("Email result:", emailResult);
   } catch (err) {
     response.statusCode = 500;
@@ -157,7 +198,7 @@ export const handler = async (event, context) => {
     console.warn("Table name is not set. Skipping the logging.");
   } else {
     try {
-      await saveSearchHistory(tableName, symbol, stubPrice);
+      await saveSearchHistory(tableName, symbol, price);
       console.log("Successfully logged to DynamoDB.");
     } catch (err) {
       console.error("Internal error writing to DynamoDB:", err);

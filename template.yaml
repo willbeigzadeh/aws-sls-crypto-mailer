@@ -11,6 +11,10 @@ Parameters:
     Default: dev
   SenderEmail:
     Type: String
+  CoinGeckoApiKey:
+    Type: String
+  CoinGeckoUrl:
+    Type: String
 
 Globals:
   Function:
@@ -24,6 +28,8 @@ Globals:
         STAGE_NAME: !Ref StageName
         SENDER_EMAIL: !Ref SenderEmail
         SEARCH_HISTORY_TABLE: !Ref SearchHistoryTable
+        COIN_GECKO_API_KEY: !Ref CoinGeckoApiKey
+        COIN_GECKO_URL: !Ref CoinGeckoUrl
 
 Resources:
   Api:
