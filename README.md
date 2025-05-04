@@ -19,7 +19,8 @@ _A simple AWS serverless API to fetch cryptocurrency prices and email them to a 
 
 8. [Deploying](#deploying)
 9. [Testing Locally](#testing-locally)
-10. [License](#license)
+10. [GitHub Actions CI/CD](#github-actions-cicd)
+11. [License](#license)
 
 ---
 
@@ -203,6 +204,10 @@ curl -X POST \
 ```
 
 ---
+
+## GitHub Actions CI/CD
+
+This project is set to use GitHub Actions to automate linting, building, and deploying on every push to `main`. The workflow is defined in `.github/workflows/pipeline.yml`.
 
 ## License
 
