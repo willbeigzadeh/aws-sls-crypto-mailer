@@ -9,6 +9,8 @@ Parameters:
   StageName:
     Type: String
     Default: dev
+  SenderEmail:
+    Type: String
 
 Globals:
   Function:
@@ -20,6 +22,7 @@ Globals:
     Environment:
       Variables:
         STAGE_NAME: !Ref StageName
+        SENDER_EMAIL: !Ref SenderEmail
 
 Resources:
   Api:
@@ -39,6 +42,14 @@ Resources:
             RestApiId: !Ref Api
             Path: /mail-current-price
             Method: post
+      Policies:
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - ses:SendEmail
+                - ses:SendRawEmail
+              Resource: "*"
 
   SearchHistoryFunction:
     Type: AWS::Serverless::Function

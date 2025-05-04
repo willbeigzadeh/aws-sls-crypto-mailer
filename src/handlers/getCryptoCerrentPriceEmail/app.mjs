@@ -1,5 +1,64 @@
+import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
+
+const sesClient = new SESClient();
+
 const symbolRegex = /^[A-Za-z0-9]{1,10}$/;
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const sendPriceEmail = async (from, to, symbol, price) => {
+  from = String(from).toLowerCase();
+  to = String(to).toLowerCase();
+  symbol = String(symbol).toUpperCase();
+
+  var params = {
+    Destination: {
+      ToAddresses: [to],
+    },
+    Message: {
+      Body: {
+        Html: {
+          Charset: "UTF-8",
+          Data:
+            '<p style="font-size:1.4rem">' +
+            "The current price of " +
+            `<strong>${symbol}</strong>` +
+            " is " +
+            `<strong>${price} AUD</strong>` +
+            "." +
+            "</p>" +
+            "<hr />" +
+            "<p>" +
+            "Powered by " +
+            "<a " +
+            'href="https://www.coingecko.com/en/api/"' +
+            'target="_blank"' +
+            ">" +
+            "CoinGecko API" +
+            "</a>" +
+            "</p>",
+        },
+        Text: {
+          Charset: "UTF-8",
+          Data:
+            `The current price of ${symbol} is ${price} AUD.` +
+            "\nPowered by CoinGecko API",
+        },
+      },
+
+      Subject: {
+        Charset: "UTF-8",
+        Data: `Crypto Current Price`,
+      },
+    },
+    Source: from,
+  };
+
+  const command = new SendEmailCommand(params);
+
+  const result = await sesClient.send(command);
+
+  return result;
+};
 
 export const handler = async (event, context) => {
   const response = {
@@ -42,7 +101,36 @@ export const handler = async (event, context) => {
   console.log("input:", { symbol, email });
 
   // TODO: Get current price from CoinGecko
-  // TODO: Email the results using SES
+  const stubPrice = 3.96;
+
+  const senderEmail = process.env.SENDER_EMAIL || "";
+  if (typeof senderEmail !== "string" || !emailRegex.test(senderEmail)) {
+    response.statusCode = 500;
+    const message = JSON.stringify({
+      message: "Internal server error",
+    });
+    console.error(`Sender email invalid: ${senderEmail}`);
+    response.body = message;
+    return response;
+  }
+  try {
+    const emailResult = await sendPriceEmail(
+      senderEmail,
+      email,
+      symbol,
+      stubPrice
+    );
+    console.log("Email result:", emailResult);
+  } catch (err) {
+    response.statusCode = 500;
+    const message = JSON.stringify({
+      message: "Internal error sending email.",
+    });
+    console.error(message, err);
+    response.body = message;
+    return response;
+  }
+
   // TODO: Log the search in DynamoDB
   response.body = JSON.stringify({ message: "Success, check your email!" });
   return response;

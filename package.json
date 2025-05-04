@@ -18,6 +18,7 @@
   },
   "homepage": "https://github.com/willbeigzadeh/aws-sls-crypto-mailer#readme",
   "devDependencies": {
+    "@aws-sdk/client-ses": "^3.799.0",
     "@eslint/js": "^9.26.0",
     "eslint": "^9.26.0",
     "globals": "^16.0.0",
