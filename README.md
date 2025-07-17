@@ -19,8 +19,9 @@ _A simple AWS serverless API to fetch cryptocurrency prices and email them to a 
 
 8. [Deploying](#deploying)
 9. [Testing Locally](#testing-locally)
-10. [GitHub Actions CI/CD](#github-actions-cicd)
-11. [License](#license)
+10. [Deleting](#deleting)
+11. [GitHub Actions CI/CD](#github-actions-cicd)
+12. [License](#license)
 
 ---
 
@@ -201,6 +202,16 @@ curl -X POST \
   http://127.0.0.1:3000/dev/mail-current-price \
   -H "Content-Type: application/json" \
   -d '{"symbol":"btc","email":"you@domain.com"}'
+```
+
+---
+
+## Deleting
+
+This will delete the whole stack. Ensure your env vars are set, then:
+
+```bash
+make delete
 ```
 
 ---

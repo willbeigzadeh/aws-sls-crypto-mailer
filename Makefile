@@ -17,7 +17,7 @@ AWS_REGION ?= ap-southeast-2
 export STAGE_NAME
 export AWS_REGION
 
-.PHONY: lint validate build deploy
+.PHONY: lint validate build deploy delete
 
 default: build
 
@@ -48,4 +48,8 @@ deploy:
 		SenderEmail=$(SENDER_EMAIL) \
 	  	CoinGeckoApiKey=$(COIN_GECKO_API_KEY) \
 	  	CoinGeckoUrl=$(COIN_GECKO_URL)
-	  
+  
+delete:
+	sam delete \
+	  --stack-name aws-sls-crypto-mailer-$(STAGE_NAME) \
+	  --region $(AWS_REGION)
